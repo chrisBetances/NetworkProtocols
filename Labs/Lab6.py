@@ -22,11 +22,11 @@ def main():
     """
 
     # this resource request should result in "chunked" data transfer
-    # get_http_resource('http://seprof.sebern.com/', 'index.html')
+    get_http_resource('http://seprof.sebern.com/', 'index.html')
     # this resource request should result in "Content-Length" data transfer
-    # get_http_resource('http://seprof.sebern.com/sebern1.jpg', 'sebern1.jpg')
+    get_http_resource('http://seprof.sebern.com/sebern1.jpg', 'sebern1.jpg')
     # get_http_resource('http://seprof.sebern.com:8080/sebern1.jpg', 'sebern2.jpg')
-    
+
 # another resource to try for a little larger and more complex entity
     get_http_resource('http://seprof.sebern.com/courses/cs2910-2014-2015/sched.md','sched-file.md')
 
@@ -88,11 +88,11 @@ def read_size(tcp_socket):
     :rtype bytes
     :return: size of the next chunk
     """
-    size_bytes = read_bytes(tcp_socket, 1)
+    size_bytes = b''
     while b'\n' not in size_bytes:
         size_bytes = size_bytes + read_bytes(tcp_socket, 1)
     size_bytes = size_bytes[:-2]
-    return int.from_bytes(size_bytes, 'big')
+    return int(size_bytes, 16)
 
 
 def read_chunk(tcp_socket, chunk_size):
@@ -108,7 +108,7 @@ def read_chunk(tcp_socket, chunk_size):
     tgt_size = chunk_size + 2
     while len(chunk) < tgt_size:
         tgt_diff = tgt_size - len(chunk)
-        read_bytes(tcp_socket, tgt_diff)
+        chunk = chunk + read_bytes(tcp_socket, tgt_diff)
     return chunk
 
 
@@ -124,8 +124,10 @@ def read_chunk_body(tcp_socket):
     complete_body = b''
     chunk_size = 1
     while chunk_size != 0:
-        chunk_size = read_size(tcp_socket)
+        chunk_size = read_size(tcp_socket) # gets wrong size here for .mb file
         if chunk_size != 0:
+            # print(chunk_size)
+            # print(complete_body)
             complete_body = complete_body + read_chunk(tcp_socket, chunk_size)
     return complete_body
 
@@ -165,12 +167,9 @@ def read_header(tcp_socket, file_handle):
             header_dict[entry[0]] = entry[1]
     if b'Transfer-Encoding' in header_dict:
         file_handle.write(read_chunk_body(tcp_socket))
-        print(header_dict)
     elif b'Content-Length' in header_dict:
         con_len = int(header_dict[b'Content-Length'])
-        print(header_dict)
         file_handle.write(read_body(tcp_socket, con_len))
-
 
 
 def pop_lib(tcp_socket, header):
