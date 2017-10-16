@@ -73,29 +73,26 @@ def request_thread(request_socket):
 
 
 def build_msg(tcp_socket, file_name):
+    file_path = './', file_name
     # open file
-    file_handle = open(file_name)
+    file_handle = open(file_path)
     # read header info
-    build_header(tcp_socket, file_handle)
+    build_header(tcp_socket, file_path)
     # close file and socket
     file_handle.close()
     tcp_socket.close()
 
 
-def chunkerizer(data):
-    chunked_data = b''
-    # chunk_size in base 16
+def build_header(file_path):
+    status_code = b'500'
+    if get_file_size(file_path) > 0:
+        status_code = b'200'
+    status_line = b'http/1.1 ' + status_code + b' OK\r\n'
+    header = b'Content-Length: ' + get_file_size(file_handle).to_bytes('big')
+    header = header + b'Content-Type: ' + get_mime_type().to_bytes('big')
 
-    return chunked_data
-
-
-def build_header(tcp_socket, file_handle, file_size):
-    header = b''
-    status_line = b'http1.1 ' + 200 + b' OK'
-
-    # build status line
     # include header pieces
-    return header
+    return status_line + header
 
 
 def send_bytes(tcp_socket):
