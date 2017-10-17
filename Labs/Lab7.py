@@ -88,11 +88,11 @@ def build_header(file_path):
     if get_file_size(file_path) > 0:
         status_code = b'200'
     status_line = b'http/1.1 ' + status_code + b' OK\r\n'
-    header = b'Content-Length: ' + get_file_size(file_handle).to_bytes('big')
-    header = header + b'Content-Type: ' + get_mime_type().to_bytes('big')
+    header = b'Content-Length: ' + get_file_size(file_path).to_bytes('big') + b'\r\n'
+    header = header + b'Content-Type: ' + get_mime_type().to_bytes('big') + b'\r\n'
 
     # include header pieces
-    return status_line + header
+    return status_line + header + b'\r\n'
 
 
 def send_bytes(tcp_socket):
