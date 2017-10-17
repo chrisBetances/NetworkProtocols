@@ -137,6 +137,7 @@ def read_body(tcp_socket, con_len):
     reads the body of the data transmission
 
     :param tcp_socket: The socket that is being monitored
+    :param con_len: The length that is expected
     :return: the whole combined body
     :rtype: bytes
     """
@@ -155,6 +156,7 @@ def read_header(tcp_socket, file_handle):
     reads the header of the data stream
 
     :param tcp_socket: The socket that is being monitored
+    :param file_handle: The control for the file
     :return: the header data needed to process format
     :rtype:
     """

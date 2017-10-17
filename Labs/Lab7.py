@@ -31,6 +31,8 @@ def http_server_setup(port):
     :param port: listening port number
     """
 
+    # data_socket.send() place this in somewhere to send the info
+
     num_connections = 10
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listen_address = ('', port)
@@ -65,51 +67,78 @@ def handle_request(request_socket):
     :return: None
     """
 
-    pass  # Replace this line with your code
+    # Listen to port
+    incoming_request = read_line(request_socket)
+    file_name = get_file_name(incoming_request)
+    # decipher requested info
+    # find data
+    # package data
+    build_msg(file_name)
+    # send msg
 
 
 def request_thread(request_socket):
     handle_request(request_socket)
 
 
-def build_msg(tcp_socket, file_name):
+def build_msg(file_name):
     file_path = './', file_name
     # open file
     file_handle = open(file_path)
     # read header info
-    build_header(tcp_socket, file_path)
-    # close file and socket
+    header = build_header(file_path)
+    file_data = file_handle.read().encode('ASCII')
     file_handle.close()
-    tcp_socket.close()
+    return header, file_data
 
 
 def build_header(file_path):
     status_code = b'500'
     if get_file_size(file_path) > 0:
         status_code = b'200'
+    # fix length of to_bytes conversions from 4 to correct number
+    file_size = get_file_size(file_path).to_bytes(4, 'big')
     status_line = b'http/1.1 ' + status_code + b' OK\r\n'
-    header = b'Content-Length: ' + get_file_size(file_path).to_bytes('big') + b'\r\n'
-    header = header + b'Content-Type: ' + get_mime_type().to_bytes('big') + b'\r\n'
-
-    # include header pieces
+    header = b'Content-Length: ' + file_size + b'\r\n'
+    header = header + b'Content-Type: ' + get_mime_type(file_path).to_bytes(4, 'big') + b'\r\n'
     return status_line + header + b'\r\n'
 
 
-def send_bytes(tcp_socket):
-    tcp_socket.sendall(get_file_size('e-sebern2.GIF'))
+def get_file_name(request):
+    file_name = ''
+    request_dict = {}
+    request = request.split(b'\r\n')
+    for i in range(0, len(request)):
+        request_part = request[i].split(b': ')
+        request_dict[request_part[0]] = request_part[1]
+    request = request.decode('ASCII')
+
+    return file_name
 
 
-def read_bytes(tcp_socket, num_bytes):
+def read_line(request_socket):
+    """
+    This method decodes the combined bytes
+
+    :param int request_socket: The socket to read from
+    :return: the decoded message in ASCII
+    """
+    b = read_bytes(request_socket)
+    while b'\r\n' not in b:
+        b = b + read_bytes(request_socket)
+    return b.decode('ASCII')
+
+
+def read_bytes(request_socket):
     """
     collects the bytes in the data stream
 
-    :param tcp_socket: The socket that is being monitored
-    :param num_bytes: number of bytes to be collected
+    :param request_socket: The socket that is being monitored
     :return: number of bytes determined by the nun_bytes
     :rtype: bytes
     """
 
-    b = tcp_socket.recv(num_bytes)
+    b = request_socket.recv(1)
     if len(b) == 0:
         raise Exception("End of Stream")
     return b
@@ -153,6 +182,31 @@ def get_file_size(file_path):
     return file_size
 
 
+
 main()
 
 # Replace this line with your comments on the lab
+
+
+"""
+Quarentine
+"""
+
+
+
+
+def read_msg(data_socket):
+    """
+    This method converts a message in Hexadecimal to a human readable language
+
+    :param int data_socket: The socket to read from
+    :return: the decoded message to the console
+    """
+    total_length = get_length(data_socket)
+    if total_length == 0:
+        return b'Q'
+    else:
+        message = ''
+        for i in range(0, total_length):
+            message = message + read_line(data_socket)
+        print(message)
