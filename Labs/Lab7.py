@@ -4,7 +4,7 @@
 - Lab N
 - Names:
   - Chris Betances
-  - Be Halligan
+  - Ben Halligan
 
 A simple HTTP server
 """
@@ -97,9 +97,12 @@ def build_header(file_path):
     if get_file_size(file_path) > 0:
         status_code = b'200'
     # fix length of to_bytes conversions from 4 to correct number
+    timestamp = datetime.datetime.utcnow();
+    timestring = timestamp.strftime('%a, %d, %b, %Y, %H:%M:%S GMT') + '\r\n'
     file_size = get_file_size(file_path).to_bytes(4, 'big')
     status_line = b'http/1.1 ' + status_code + b' OK\r\n'
     header = b'Content-Length: ' + file_size + b'\r\n'
+    header = header + timestring.encode('big')
     header = header + b'Content-Type: ' + get_mime_type(file_path).to_bytes(4, 'big') + b'\r\n'
     return status_line + header + b'\r\n'
 
@@ -194,19 +197,19 @@ Quarentine
 
 
 
-
-def read_msg(data_socket):
-    """
-    This method converts a message in Hexadecimal to a human readable language
-
-    :param int data_socket: The socket to read from
-    :return: the decoded message to the console
-    """
-    total_length = get_length(data_socket)
-    if total_length == 0:
-        return b'Q'
-    else:
-        message = ''
-        for i in range(0, total_length):
-            message = message + read_line(data_socket)
-        print(message)
+#
+# def read_msg(data_socket):
+#     """
+#     This method converts a message in Hexadecimal to a human readable language
+#
+#     :param int data_socket: The socket to read from
+#     :return: the decoded message to the console
+#     """
+#     total_length = get_length(data_socket)
+#     if total_length == 0:
+#         return b'Q'
+#     else:
+#         message = ''
+#         for i in range(0, total_length):
+#             message = message + read_line(data_socket)
+#         print(message)
