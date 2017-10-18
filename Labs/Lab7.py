@@ -1,10 +1,10 @@
 """
 - CS2911 - 011
 - Fall 2017
-- Lab N
+- Lab 7
 - Names:
   - Chris Betances
-  - Be Halligan
+  - Ben Halligan
 
 A simple HTTP server
 """
@@ -70,11 +70,8 @@ def handle_request(request_socket):
     # Listen to port
     incoming_request = read_line(request_socket)
     file_name = get_file_name(incoming_request)
-    # decipher requested info
-    # find data
-    # package data
-    build_msg(file_name)
-    # send msg
+    print(incoming_request)
+    request_socket.send(build_msg(file_name))
 
 
 def request_thread(request_socket):
@@ -82,37 +79,40 @@ def request_thread(request_socket):
 
 
 def build_msg(file_name):
-    file_path = './', file_name
+    if file_name == '/':
+        file_name = '/index.html'
+    file_path = '.' + file_name
     # open file
-    file_handle = open(file_path)
+    file_handle = open(file_path, 'rb')
     # read header info
     header = build_header(file_path)
-    file_data = file_handle.read().encode('ASCII')
+    file_data = file_handle.read()
     file_handle.close()
-    return header, file_data
+    return header + file_data
 
 
 def build_header(file_path):
     status_code = b'500'
     if get_file_size(file_path) > 0:
         status_code = b'200'
-    # fix length of to_bytes conversions from 4 to correct number
-    file_size = get_file_size(file_path).to_bytes(4, 'big')
+    file_size = get_file_size(file_path)
+    timestamp = datetime.datetime.utcnow()
+    time_string = timestamp.strftime('%a, %d %b %Y %H:%M:%S GMT')+'\r\n'
     status_line = b'http/1.1 ' + status_code + b' OK\r\n'
-    header = b'Content-Length: ' + file_size + b'\r\n'
-    header = header + b'Content-Type: ' + get_mime_type(file_path).to_bytes(4, 'big') + b'\r\n'
+    header = b'Content-Length: ' + str(file_size).encode('ASCII') + b'\r\n'
+    header = header + time_string.encode('ASCII')
+    header = header + b'Content-Type: ' + get_mime_type(file_path).encode('ASCII') + b'\r\n'
+    print('header: ', header)
     return status_line + header + b'\r\n'
 
 
 def get_file_name(request):
     file_name = ''
-    request_dict = {}
-    request = request.split(b'\r\n')
-    for i in range(0, len(request)):
-        request_part = request[i].split(b': ')
-        request_dict[request_part[0]] = request_part[1]
-    request = request.decode('ASCII')
-
+    print(request)
+    request = request.split('\r\n')
+    name_line = request[0].split(' ')
+    if name_line[0] == 'GET':
+        file_name = name_line[1]
     return file_name
 
 
@@ -194,19 +194,19 @@ Quarentine
 
 
 
-
-def read_msg(data_socket):
-    """
-    This method converts a message in Hexadecimal to a human readable language
-
-    :param int data_socket: The socket to read from
-    :return: the decoded message to the console
-    """
-    total_length = get_length(data_socket)
-    if total_length == 0:
-        return b'Q'
-    else:
-        message = ''
-        for i in range(0, total_length):
-            message = message + read_line(data_socket)
-        print(message)
+#
+# def read_msg(data_socket):
+#     """
+#     This method converts a message in Hexadecimal to a human readable language
+#
+#     :param int data_socket: The socket to read from
+#     :return: the decoded message to the console
+#     """
+#     total_length = get_length(data_socket)
+#     if total_length == 0:
+#         return b'Q'
+#     else:
+#         message = ''
+#         for i in range(0, total_length):
+#             message = message + read_line(data_socket)
+#         print(message)
