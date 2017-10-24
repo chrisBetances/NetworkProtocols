@@ -1,10 +1,10 @@
 """
-- CS2911 - 0NN
+- CS2911 - 011
 - Fall 2017
 - Lab N
 - Names:
-  - 
-  - 
+  - Chris Betances
+  - Ben Halligan
 
 A simple email sending program.
 
