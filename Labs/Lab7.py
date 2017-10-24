@@ -1,7 +1,7 @@
 """
 - CS2911 - 011
 - Fall 2017
-- Lab N
+- Lab 7
 - Names:
   - Chris Betances
   - Ben Halligan
@@ -33,7 +33,7 @@ def http_server_setup(port):
 
     # data_socket.send() place this in somewhere to send the info
 
-    num_connections = 10
+    num_connections = 20
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listen_address = ('', port)
     server_socket.bind(listen_address)
@@ -43,10 +43,11 @@ def http_server_setup(port):
             request_socket, request_address = server_socket.accept()
             print('connection from {0} {1}'.format(request_address[0], request_address[1]))
             # Create a new thread, and set up the handle_request method and its argument (in a tuple)
-            request_handler = threading.Thread(target=handle_request, args=(request_socket,))
+            # request_handler = threading.Thread(target=handle_request, args=(request_socket,))
             # Start the request handler thread.
-            request_handler.start()
+            # request_handler.start()
             # Just for information, display the running threads (including this main one)
+            handle_request(request_socket)
             print('threads: ', threading.enumerate())
     # Set up so a Ctrl-C should terminate the server; this may have some problems on Windows
     except KeyboardInterrupt:
@@ -67,29 +68,37 @@ def handle_request(request_socket):
     :return: None
     """
 
+    request_status = b'404'
     # Listen to port
     incoming_request = read_line(request_socket)
     file_name = get_file_name(incoming_request)
-    # decipher requested info
-    # find data
-    # package data
-    build_msg(file_name)
-    # send msg
+    if file_name == '/':
+        file_name = '/index.html'
+    file_path = '.' + file_name
+    message = b''
+    if os.path.exists(file_path):
+        request_status = b'200'
+        message = build_msg(file_path)
+    header = build_header(file_path, request_status)
+    request_socket.sendall(header + message)
+    request_socket.close()
 
 
 def request_thread(request_socket):
     handle_request(request_socket)
 
 
-def build_msg(file_name):
-    file_path = './', file_name
-    # open file
-    file_handle = open(file_path)
-    # read header info
-    header = build_header(file_path)
-    file_data = file_handle.read().encode('ASCII')
+def build_msg(file_path):
+    """
+    Gets selected file and returns data as bytes
+    :param file_path: file location
+    :return: file's data as bytes
+    :author: halliganbs
+    """
+    file_handle = open(file_path, 'rb')
+    file_data = file_handle.read()
     file_handle.close()
-    return header, file_data
+    return file_data
 
 
 def build_header(file_path):
@@ -107,15 +116,50 @@ def build_header(file_path):
     return status_line + header + b'\r\n'
 
 
-def get_file_name(request):
-    file_name = ''
-    request_dict = {}
-    request = request.split(b'\r\n')
-    for i in range(0, len(request)):
-        request_part = request[i].split(b': ')
-        request_dict[request_part[0]] = request_part[1]
-    request = request.decode('ASCII')
+def build_header(file_path, request_status):
+    """
+    Creates a dictionary of header parts and then creates header
+    :param file_path: provided file path
+    :param request_status: numerical status code
+    :return: Combined Status line and header
+    :author: betanoes-leblancc
+    """
+    print(request_status)
+    header_dict = {}
+    header = ''
+    if request_status == b'200':
+        status_phrase = b'OK'
+    elif request_status == b'404':
+        status_phrase = b'Not Found'
+    file_size = get_file_size(file_path)
+    if file_size == None:
+        file_size = 0
+    timestamp = datetime.datetime.utcnow()
+    time_string = timestamp.strftime('%a, %d %b %Y %H:%M:%S GMT')
+    header_dict['Content-Length'] = str(file_size)
+    header_dict['Content-Type'] = get_mime_type(file_path)
+    header_dict['Date'] = time_string
+    header_dict['Connection'] = 'close'
+    status_line = b'http/1.1 ' + request_status + b' ' + status_phrase + b'\r\n'
+    for k, v in header_dict.items():
+        header += k + ': ' + v + '\r\n'
+    print(status_line + header.encode('ASCII') + b'\r\n')
+    return status_line + header.encode('ASCII') + b'\r\n'
 
+
+def get_file_name(request):
+    """
+    Gets file name from HTTP request
+    :param request: http request
+    :return: name of file
+    :author: betanoes-leblancc
+    """
+    file_name = ''
+    print(request)
+    request = request.split('\r\n')
+    name_line = request[0].split(' ')
+    if name_line[0] == 'GET':
+        file_name = name_line[1]
     return file_name
 
 
@@ -125,6 +169,7 @@ def read_line(request_socket):
 
     :param int request_socket: The socket to read from
     :return: the decoded message in ASCII
+    :author: halliganbs
     """
     b = read_bytes(request_socket)
     while b'\r\n' not in b:
@@ -139,6 +184,7 @@ def read_bytes(request_socket):
     :param request_socket: The socket that is being monitored
     :return: number of bytes determined by the nun_bytes
     :rtype: bytes
+    :author: betanoes-leblancc
     """
 
     b = request_socket.recv(1)
@@ -185,31 +231,4 @@ def get_file_size(file_path):
     return file_size
 
 
-
 main()
-
-# Replace this line with your comments on the lab
-
-
-"""
-Quarentine
-"""
-
-
-
-#
-# def read_msg(data_socket):
-#     """
-#     This method converts a message in Hexadecimal to a human readable language
-#
-#     :param int data_socket: The socket to read from
-#     :return: the decoded message to the console
-#     """
-#     total_length = get_length(data_socket)
-#     if total_length == 0:
-#         return b'Q'
-#     else:
-#         message = ''
-#         for i in range(0, total_length):
-#             message = message + read_line(data_socket)
-#         print(message)
