@@ -137,7 +137,21 @@ def smtp_send(password, message_info, message_text):
                 'Subject': Email subject
             Other keys can be added to support other email headers, etc.
     """
+    # build_header(message_info)
+
     pass  # Replace this line with your code
+
+
+def build_header():
+    pass
+
+
+def build_msg():
+    pass
+
+
+def build_attachment():
+    pass
 
 
 # Your code and additional functions go here. (Replace this line, too.)
