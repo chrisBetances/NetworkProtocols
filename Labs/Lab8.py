@@ -137,18 +137,17 @@ def smtp_send(password, message_info, message_text):
                 'Subject': Email subject
             Other keys can be added to support other email headers, etc.
     """
-    # old socket is tcp socket
-    # wrapped is encrypted
-    # check want is received then send response
 
     # Set up socket
     old_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     old_socket.connect((SMTP_DOMAINNAME, SMTP_PORT))
-
+    # Start pre SMTP steps
+    pre_enycript(old_socket)
+    # Encryption starts here
     # encrypt socket and send message
     context = ssl.create_default_context()
     wrapped_socket = context.wrap_socket(old_socket, server_hostname=SMTP_SERVER)
-    wrapped_socket.send(message_text)
+    auth_step(old_socket, password, message_info)
     # close everybody
     wrapped_socket.close()
     old_socket.close()
@@ -163,14 +162,44 @@ def build_header(message_info):
     :author: Halliganbs
     """
     header = ''
-    header = header + 'To:'+message_info['To']+'\r\n' \
-        + 'From:'+message_info['From']+'\r\n' \
-        + 'Date:'+message_info['Date']+'\r\n' \
-        + 'Subject:'+message_info['Subject']+'\r\r'
+    header = header + 'To:' + message_info['To'] + '\r\n' \
+             + 'From:' + message_info['From'] + '\r\n' \
+             + 'Date:' + message_info['Date'] + '\r\n' \
+             + 'Subject:' + message_info['Subject'] + '\r\r'
     return header
 
 
-def build_msg():
+def pre_enycript(socket):
+    socket.send('EHLO' + SMTP_DOMAINNAME)
+    response = socket.recv(200)  # arbitrary amounts of bytes to read in
+    print(response)
+    socket.send('STARTTLS')
+    response = socket.recv(200)
+    # TODO there is a 90% chance that I need to change
+    if response != '220 2.0.0 SMTP server ready':
+        raise Exception('Not corrtect response, found repsonse: ' + response)
+    print('--Everything beyonds this point is encrypted--')
+
+
+def auth_step(socket, password, header):
+    """
+    Does the authentication with the SMTP server
+    :param socket: encrypted socket to send/receive the responses
+    :param password: user's password
+    :param header: the message information -Might need some of this
+    :return: might be void, most likely
+    """
+    pass
+
+
+def send_msg(socket, message_info, message_text):
+    """
+    Sends the message to the SMTP server and closes quits connections
+    :param socket: socket to send/receive responses
+    :param message_info: Data need about the Message
+    :param message_text: Message itself
+    :return: None
+    """
     pass
 
 
