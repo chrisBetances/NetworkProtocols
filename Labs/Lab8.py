@@ -1,10 +1,10 @@
 """
-- CS2911 - 0NN
+- CS2911 - 011
 - Fall 2017
 - Lab 8
 - Names:
-  -
-  -
+  - Chris Betances
+  - Ben Halligan
 
 A simple email sending program.
 
@@ -64,7 +64,7 @@ def main():
 
     print("message_info =", message_info)
 
-    message_text = 'Test message_info number 6\r\n\r\nAnother line.'
+    message_text = 'Test message_info number 6\r\nAnother line.'
 
     smtp_send(password, message_info, message_text)
 
@@ -128,29 +128,26 @@ def center_gui_on_screen(gui, gui_width, gui_height):
 
 def smtp_send(password, message_info, message_text):
     """Send a message via SMTP.
-
     :param password: String containing user password.
     :param message_info: Dictionary with string values for the following keys:
                 'To': Recipient address (only one recipient required)
                 'From': Sender address
                 'Date': Date string for current date/time in SMTP format
                 'Subject': Email subject
+    :param message_text:  String message that is to be sent
             Other keys can be added to support other email headers, etc.
     """
-    # old socket is tcp socket
-    # wrapped is encrypted
-    # check want is received then send response
-
     # Set up socket
     old_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     old_socket.connect((SMTP_SERVER, SMTP_PORT))
     # Start pre SMTP steps
-    pre_enycript(old_socket)
+    pre_encrypt(old_socket)
+
     # Encryption starts here
     # encrypt socket and send message
     context = ssl.create_default_context()
     wrapped_socket = context.wrap_socket(old_socket, server_hostname=SMTP_SERVER)
-    auth_step(old_socket, password, message_info)
+    auth_step(wrapped_socket, password, message_info)
     send_msg(wrapped_socket, message_info, message_text)
     # close everybody
     wrapped_socket.close()
@@ -166,22 +163,25 @@ def build_header(message_info):
     :author: Halliganbs
     """
     header = ''
-    header = header + 'To:'+message_info['To']+'\r\n' \
-        + 'From:'+message_info['From']+'\r\n' \
-        + 'Date:'+message_info['Date']+'\r\n' \
-        + 'Subject:'+message_info['Subject']+'\r\r'
+    for k, v in message_info.items():
+        header += k + ':' + v + '\r\n'
     return header
 
 
-def pre_enycript(socket):
-    send(socket,b'EHLO' + SMTP_DOMAINNAME.encode('ASCII'))
-    response = socket.recv(200)
-    print(response)
-    send(socket,b'STARTTLS')
-    response = socket.recv(3)
+def pre_encrypt(socket):
+    response = read_line(socket)
+    if response[:3] != '220':
+        raise Exception('Server not ready to receive the EHLO')
+    send(socket, b'EHLO ' + SMTP_DOMAINNAME.encode('ASCII'))
+    response = read_line(socket)
+    while '-' in response:
+        response = read_line(socket)
+    send(socket, b'STARTTLS')
+    response = read_line(socket)
     # TODO there is a 90% chance that I need to change
-    # if response != '220 2.0.0 SMTP server ready':
-    #     raise Exception('Not corrtect response, found repsonse: ', response)
+    if '220' not in response:
+        print(response)
+        raise Exception('Not correct response, found response: ', response)
     print('--Everything beyonds this point is encrypted--')
 
 
@@ -193,27 +193,32 @@ def auth_step(socket, password, header):
     :param header: the message information -Might need some of this
     :return: might be void, most likely
     """
-    auth_login = 'AUTH LOGIN'
-    user_name = base64.b64encode(b'hallliganbs@msoe.edu')  # rip inbox
+    send(socket, b'EHLO ' + SMTP_DOMAINNAME.encode('ASCII'))
+    response = read_line(socket)
+    while '-' in response:
+        response = read_line(socket)
+    auth_login = b'AUTH LOGIN'
+    user_name = base64.b64encode(b'betances-leblancc@msoe.edu')  # rip inbox
     encode_pass = base64.b64encode(password.encode('ASCII'))
 
-    send(socket,auth_login)
+    send(socket, auth_login)
 
     # Server ask for username
-    response_user = socket.recv(3)
-    if response_user != '354':
+    response_user = read_line(socket)
+    if response_user[:3] != '334':
         raise Exception('Username question expected')
-    send(socket,user_name)
+    send(socket, user_name)
 
     # server ask for password
-    response_pass_ask = socket.recv(3)
-    if response_pass_ask != '354':
+    response_pass_ask = read_line(socket)
+    if response_pass_ask[:3] != '334':
         raise Exception('Password Request Expected')
-    send(socket,encode_pass)
+    send(socket, encode_pass)
 
     # server success?
-    response_success = socket.recv(3)
-    if response_success != '235':
+    response_success = read_line(socket)
+    if response_success[:3] != '235':
+        print(response_success)
         raise Exception('Authentication was NOT successful')
     print('Authentication Successful')
 
@@ -226,31 +231,32 @@ def send_msg(socket, message_info, message_text):
     :param message_text: Message itself
     :return: None
     """
-    send(socket,b'RCPT TO:' + message_info['To'].encode('ASCII'))
-    response = socket.recv(3)
-    if response != b'250':
-        raise Exception('Response for the RCPT TO is not OK')
-    socket.recv(3)
-    send(socket,b'DATA')
-    response = socket.recv(3)
-    if response != b'354':
+    send(socket, b'MAIL FROM:' + message_info['From'].encode('ASCII'))
+    response = read_line(socket)
+    if response[:3] != '250':
+        print(response)
+        raise Exception('Did not like Mail From')
+    send(socket, b'RCPT TO:' + message_info['To'].encode('ASCII'))
+    response = read_line(socket)
+    if response[:3] != '250':
+        print(response)
+        raise Exception('Did not like RCPT TO')
+    send(socket, b'DATA')
+    response = read_line(socket)
+    if response[:3] != '354':
+        print(response)
         raise Exception('')
-    socket.recv(38) # may need to be 34
-    send(socket,message_text)
-    header = ''
-    for k, v in message_info.items():
-        header += k + ':' + v + "\n"
-    send(socket,header.encode('ASCII'))
-    send(socket,b'.')
-    response = socket.recv(3)
-    if response != b'250':
+    send(socket, build_header(message_info).encode('ASCII') + message_text.encode('ASCII'))
+    send(socket, b'.')
+    response = read_line(socket)
+    if response[:3] != '250':
         raise Exception('not OK')
-    socket.recv(3)
-    send(socket,b'QUIT')
+    send(socket, b'QUIT')
 
 
 def send(socket, data):
-    socket.send(data + b'/r/n')
+    socket.send(data + b'\r\n')
+
 
 def read_line(request_socket):
     """
