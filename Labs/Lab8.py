@@ -174,14 +174,14 @@ def build_header(message_info):
 
 
 def pre_enycript(socket):
-    socket.send(b'EHLO' + SMTP_DOMAINNAME.encode('ASCII'))
+    send(socket,b'EHLO' + SMTP_DOMAINNAME.encode('ASCII'))
     response = socket.recv(200)
     print(response)
-    socket.send(b'STARTTLS')
+    send(socket,b'STARTTLS')
     response = socket.recv(3)
     # TODO there is a 90% chance that I need to change
-    if response != '220 2.0.0 SMTP server ready':
-        raise Exception('Not corrtect response, found repsonse: ' + response)
+    # if response != '220 2.0.0 SMTP server ready':
+    #     raise Exception('Not corrtect response, found repsonse: ', response)
     print('--Everything beyonds this point is encrypted--')
 
 
@@ -197,19 +197,19 @@ def auth_step(socket, password, header):
     user_name = base64.b64encode(b'hallliganbs@msoe.edu')  # rip inbox
     encode_pass = base64.b64encode(password.encode('ASCII'))
 
-    socket.send(auth_login)
+    send(socket,auth_login)
 
     # Server ask for username
     response_user = socket.recv(3)
     if response_user != '354':
         raise Exception('Username question expected')
-    socket.send(user_name)
+    send(socket,user_name)
 
     # server ask for password
     response_pass_ask = socket.recv(3)
     if response_pass_ask != '354':
         raise Exception('Password Request Expected')
-    socket.send(encode_pass)
+    send(socket,encode_pass)
 
     # server success?
     response_success = socket.recv(3)
@@ -226,32 +226,31 @@ def send_msg(socket, message_info, message_text):
     :param message_text: Message itself
     :return: None
     """
-    socket.send(b'RCPT TO:' + message_info['To'].encode('ASCII'))
+    send(socket,b'RCPT TO:' + message_info['To'].encode('ASCII'))
     response = socket.recv(3)
     if response != b'250':
         raise Exception('Response for the RCPT TO is not OK')
     socket.recv(3)
-    socket.send('DATA')
+    send(socket,b'DATA')
     response = socket.recv(3)
     if response != b'354':
         raise Exception('')
     socket.recv(38) # may need to be 34
-    socket.send(message_text)
+    send(socket,message_text)
     header = ''
     for k, v in message_info.items():
         header += k + ':' + v + "\n"
-    socket.send(header.encode('ASCII'))
-    socket.send('.')
+    send(socket,header.encode('ASCII'))
+    send(socket,b'.')
     response = socket.recv(3)
     if response != b'250':
         raise Exception('not OK')
     socket.recv(3)
-    socket.send(b'QUIT')
+    send(socket,b'QUIT')
 
 
-def build_attachment():
-    pass
-
+def send(socket, data):
+    socket.send(data + b'/r/n')
 
 def read_line(request_socket):
     """
