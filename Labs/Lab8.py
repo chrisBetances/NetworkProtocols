@@ -147,12 +147,13 @@ def smtp_send(password, message_info, message_text):
     # encrypt socket and send message
     context = ssl.create_default_context()
     wrapped_socket = context.wrap_socket(old_socket, server_hostname=SMTP_SERVER)
-    auth_step(wrapped_socket, password, message_info)
+    authenticator = -1
+    while authenticator == -1:
+        authenticator = auth_step(wrapped_socket, password, message_info)
     send_msg(wrapped_socket, message_info, message_text)
     # close everybody
     wrapped_socket.close()
     old_socket.close()
-    pass  # Replace this line with your code
 
 
 def build_header(message_info):
@@ -219,8 +220,10 @@ def auth_step(socket, password, header):
     response_success = read_line(socket)
     if response_success[:3] != '235':
         print(response_success)
-        raise Exception('Authentication was NOT successful')
+        return -1
+        # raise Exception('Authentication was NOT successful')
     print('Authentication Successful')
+    return 0
 
 
 def send_msg(socket, message_info, message_text):
