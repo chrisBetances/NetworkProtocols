@@ -56,7 +56,7 @@ def main():
     (username, password) = login_gui()
 
     message_info = {}
-    message_info['To'] = 'halliganbs@msoe.edu'
+    message_info['To'] = 'betances-leblancc@msoe.edu'
     message_info['From'] = username
     message_info['Subject'] = 'Yet another test message'
     message_info['Date'] = 'Thu, 9 Oct 2014 23:56:09 +0000'
@@ -143,7 +143,7 @@ def smtp_send(password, message_info, message_text):
 
     # Set up socket
     old_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    old_socket.connect((SMTP_DOMAINNAME, SMTP_PORT))
+    old_socket.connect((SMTP_SERVER, SMTP_PORT))
     # Start pre SMTP steps
     pre_enycript(old_socket)
     # Encryption starts here
@@ -151,8 +151,7 @@ def smtp_send(password, message_info, message_text):
     context = ssl.create_default_context()
     wrapped_socket = context.wrap_socket(old_socket, server_hostname=SMTP_SERVER)
     auth_step(old_socket, password, message_info)
-
-    #call to send mesasge at send_msg()
+    send_msg(wrapped_socket, message_info, message_text)
     # close everybody
     wrapped_socket.close()
     old_socket.close()
@@ -175,11 +174,11 @@ def build_header(message_info):
 
 
 def pre_enycript(socket):
-    socket.send('EHLO' + SMTP_DOMAINNAME)
-    response = socket.recv(200)  # arbitrary amounts of bytes to read in
-    print(response)
-    socket.send('STARTTLS')
+    socket.send(b'EHLO' + SMTP_DOMAINNAME.encode('ASCII'))
     response = socket.recv(200)
+    print(response)
+    socket.send(b'STARTTLS')
+    response = socket.recv(3)
     # TODO there is a 90% chance that I need to change
     if response != '220 2.0.0 SMTP server ready':
         raise Exception('Not corrtect response, found repsonse: ' + response)
@@ -236,7 +235,7 @@ def send_msg(socket, message_info, message_text):
     response = socket.recv(3)
     if response != b'354':
         raise Exception('')
-    socket.recv(38) #may need to be 34
+    socket.recv(38) # may need to be 34
     socket.send(message_text)
     header = ''
     for k, v in message_info.items():
