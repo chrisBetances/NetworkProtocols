@@ -1,7 +1,7 @@
 """
 - CS2911 - 0NN
 - Fall 2017
-- Lab N
+- Lab 8
 - Names:
   -
   -
@@ -151,6 +151,8 @@ def smtp_send(password, message_info, message_text):
     context = ssl.create_default_context()
     wrapped_socket = context.wrap_socket(old_socket, server_hostname=SMTP_SERVER)
     auth_step(old_socket, password, message_info)
+
+    #call to send mesasge at send_msg()
     # close everybody
     wrapped_socket.close()
     old_socket.close()
@@ -225,7 +227,27 @@ def send_msg(socket, message_info, message_text):
     :param message_text: Message itself
     :return: None
     """
-    pass
+    socket.send(b'RCPT TO:' + message_info['To'].encode('ASCII'))
+    response = socket.recv(3)
+    if response != b'250':
+        raise Exception('Response for the RCPT TO is not OK')
+    socket.recv(3)
+    socket.send('DATA')
+    response = socket.recv(3)
+    if response != b'354':
+        raise Exception('')
+    socket.recv(38) #may need to be 34
+    socket.send(message_text)
+    header = ''
+    for k, v in message_info.items():
+        header += k + ':' + v + "\n"
+    socket.send(header.encode('ASCII'))
+    socket.send('.')
+    response = socket.recv(3)
+    if response != b'250':
+        raise Exception('not OK')
+    socket.recv(3)
+    socket.send(b'QUIT')
 
 
 def build_attachment():
