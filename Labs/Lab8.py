@@ -56,7 +56,7 @@ def main():
     (username, password) = login_gui()
 
     message_info = {}
-    message_info['To'] = 'halliganbs@msoe.edu'
+    message_info['To'] = 'yoder@msoe.edu'
     message_info['From'] = username
     message_info['Subject'] = 'Yet another test message'
     message_info['Date'] = 'Thu, 9 Oct 2014 23:56:09 +0000'
@@ -177,6 +177,8 @@ def pre_encrypt(socket):
     response = read_line(socket)
     while '-' in response:
         response = read_line(socket)
+    if response[:3] != '250':
+        raise Exception('EHLO Response not OK')
     send(socket, b'STARTTLS')
     response = read_line(socket)
     # TODO there is a 90% chance that I need to change
@@ -198,6 +200,8 @@ def auth_step(socket, password, header):
     response = read_line(socket)
     while '-' in response:
         response = read_line(socket)
+    if response[:3] != '250':
+        raise Exception('EHLO Response not OK')
     auth_login = b'AUTH LOGIN'
     user_name = base64.b64encode(b'betances-leblancc@msoe.edu')  # rip inbox
     encode_pass = base64.b64encode(password.encode('ASCII'))
