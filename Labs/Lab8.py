@@ -199,7 +199,7 @@ def auth_step(socket, password, header):
     while '-' in response:
         response = read_line(socket)
     auth_login = b'AUTH LOGIN'
-    user_name = base64.b64encode(b'halliganbs@msoe.edu')  # rip inbox
+    user_name = base64.b64encode(b'betances-leblancc@msoe.edu')  # rip inbox
     encode_pass = base64.b64encode(password.encode('ASCII'))
 
     send(socket, auth_login)
