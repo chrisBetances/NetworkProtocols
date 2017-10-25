@@ -1,10 +1,10 @@
 """
-- CS2911 - 011
+- CS2911 - 0NN
 - Fall 2017
 - Lab N
 - Names:
-  - Chris Betances
-  - Ben Halligan
+  -
+  -
 
 A simple email sending program.
 
@@ -56,7 +56,7 @@ def main():
     (username, password) = login_gui()
 
     message_info = {}
-    message_info['To'] = 'sebern@msoe.edu'
+    message_info['To'] = 'halliganbs@msoe.edu'
     message_info['From'] = username
     message_info['Subject'] = 'Yet another test message'
     message_info['Date'] = 'Thu, 9 Oct 2014 23:56:09 +0000'
@@ -137,6 +137,9 @@ def smtp_send(password, message_info, message_text):
                 'Subject': Email subject
             Other keys can be added to support other email headers, etc.
     """
+    # old socket is tcp socket
+    # wrapped is encrypted
+    # check want is received then send response
 
     # Set up socket
     old_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -162,10 +165,10 @@ def build_header(message_info):
     :author: Halliganbs
     """
     header = ''
-    header = header + 'To:' + message_info['To'] + '\r\n' \
-             + 'From:' + message_info['From'] + '\r\n' \
-             + 'Date:' + message_info['Date'] + '\r\n' \
-             + 'Subject:' + message_info['Subject'] + '\r\r'
+    header = header + 'To:'+message_info['To']+'\r\n' \
+        + 'From:'+message_info['From']+'\r\n' \
+        + 'Date:'+message_info['Date']+'\r\n' \
+        + 'Subject:'+message_info['Subject']+'\r\r'
     return header
 
 
@@ -189,7 +192,29 @@ def auth_step(socket, password, header):
     :param header: the message information -Might need some of this
     :return: might be void, most likely
     """
-    pass
+    auth_login = 'AUTH LOGIN'
+    user_name = base64.b64encode(b'hallliganbs@msoe.edu')  # rip inbox
+    encode_pass = base64.b64encode(password.encode('ASCII'))
+
+    socket.send(auth_login)
+
+    # Server ask for username
+    response_user = socket.recv(3)
+    if response_user != '354':
+        raise Exception('Username question expected')
+    socket.send(user_name)
+
+    # server ask for password
+    response_pass_ask = socket.recv(3)
+    if response_pass_ask != '354':
+        raise Exception('Password Request Expected')
+    socket.send(encode_pass)
+
+    # server success?
+    response_success = socket.recv(3)
+    if response_success != '235':
+        raise Exception('Authentication was NOT successful')
+    print('Authentication Successful')
 
 
 def send_msg(socket, message_info, message_text):
@@ -207,10 +232,34 @@ def build_attachment():
     pass
 
 
-def read_line(line):
-    split_line = line.split(':')
+def read_line(request_socket):
+    """
+    This method decodes the combined bytes
 
-    return None
+    :param int request_socket: The socket to read from
+    :return: the decoded message in ASCII
+    :author: halliganbs
+    """
+    b = read_bytes(request_socket)
+    while b'\r\n' not in b:
+        b = b + read_bytes(request_socket)
+    return b.decode('ASCII')
+
+
+def read_bytes(request_socket):
+    """
+    collects the bytes in the data stream
+
+    :param request_socket: The socket that is being monitored
+    :return: number of bytes determined by the nun_bytes
+    :rtype: bytes
+    :author: betanoes-leblancc
+    """
+
+    b = request_socket.recv(1)
+    if len(b) == 0:
+        raise Exception("End of Stream")
+    return b
 
 
 # Your code and additional functions go here. (Replace this line, too.)
