@@ -181,9 +181,7 @@ def pre_encrypt(socket):
         raise Exception('EHLO Response not OK')
     send(socket, b'STARTTLS')
     response = read_line(socket)
-    # TODO there is a 90% chance that I need to change
     if '220' not in response:
-        print(response)
         raise Exception('Not correct response, found response: ', response)
     print('--Everything beyonds this point is encrypted--')
 
@@ -205,22 +203,15 @@ def auth_step(socket, password, header):
     auth_login = b'AUTH LOGIN'
     user_name = base64.b64encode(b'betances-leblancc@msoe.edu')  # rip inbox
     encode_pass = base64.b64encode(password.encode('ASCII'))
-
     send(socket, auth_login)
-
-    # Server ask for username
     response_user = read_line(socket)
     if response_user[:3] != '334':
         raise Exception('Username question expected')
     send(socket, user_name)
-
-    # server ask for password
     response_pass_ask = read_line(socket)
     if response_pass_ask[:3] != '334':
         raise Exception('Password Request Expected')
     send(socket, encode_pass)
-
-    # server success?
     response_success = read_line(socket)
     if response_success[:3] != '235':
         print(response_success)
@@ -241,17 +232,14 @@ def send_msg(socket, message_info, message_text):
     send(socket, b'MAIL FROM:' + message_info['From'].encode('ASCII'))
     response = read_line(socket)
     if response[:3] != '250':
-        print(response)
         raise Exception('Did not like Mail From')
     send(socket, b'RCPT TO:' + message_info['To'].encode('ASCII'))
     response = read_line(socket)
     if response[:3] != '250':
-        print(response)
         raise Exception('Did not like RCPT TO')
     send(socket, b'DATA')
     response = read_line(socket)
     if response[:3] != '354':
-        print(response)
         raise Exception('')
     send(socket, build_header(message_info).encode('ASCII'))
     send(socket, message_text.encode('ASCII'))
