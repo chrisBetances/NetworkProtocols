@@ -33,7 +33,7 @@ def http_server_setup(port):
 
     # data_socket.send() place this in somewhere to send the info
 
-    num_connections = 10
+    num_connections = 20
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listen_address = ('', port)
     server_socket.bind(listen_address)
@@ -43,11 +43,11 @@ def http_server_setup(port):
             request_socket, request_address = server_socket.accept()
             print('connection from {0} {1}'.format(request_address[0], request_address[1]))
             # Create a new thread, and set up the handle_request method and its argument (in a tuple)
-            request_handler = threading.Thread(target=handle_request, args=(request_socket,))
+            # request_handler = threading.Thread(target=handle_request, args=(request_socket,))
             # Start the request handler thread.
-            request_handler.start()
+            # request_handler.start()
             # Just for information, display the running threads (including this main one)
-            # handle_request(request_socket)
+            handle_request(request_socket)
             print('threads: ', threading.enumerate())
     # Set up so a Ctrl-C should terminate the server; this may have some problems on Windows
     except KeyboardInterrupt:
@@ -99,6 +99,21 @@ def build_msg(file_path):
     file_data = file_handle.read()
     file_handle.close()
     return file_data
+
+
+def build_header(file_path):
+    status_code = b'500'
+    if get_file_size(file_path) > 0:
+        status_code = b'200'
+    # fix length of to_bytes conversions from 4 to correct number
+    timestamp = datetime.datetime.utcnow();
+    timestring = timestamp.strftime('%a, %d, %b, %Y, %H:%M:%S GMT') + '\r\n'
+    file_size = get_file_size(file_path).to_bytes(4, 'big')
+    status_line = b'http/1.1 ' + status_code + b' OK\r\n'
+    header = b'Content-Length: ' + file_size + b'\r\n'
+    header = header + timestring.encode('big')
+    header = header + b'Content-Type: ' + get_mime_type(file_path).to_bytes(4, 'big') + b'\r\n'
+    return status_line + header + b'\r\n'
 
 
 def build_header(file_path, request_status):
@@ -217,5 +232,3 @@ def get_file_size(file_path):
 
 
 main()
-
-# Replace this line with your comments on the lab
