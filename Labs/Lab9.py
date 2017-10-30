@@ -255,8 +255,26 @@ def break_key(pub):
 
 
 def find_prime():
-    prime = 0
+    prime = check_prime(random.randint(MIN_PRIME, MAX_PRIME))
+    verified = False
+    while not verified:
+        if (prime - 1) % 17 != 0:
+            verified = True
+        else:
+            prime = check_prime(prime + 2)
     return prime
+
+
+def check_prime(num):
+    if num % 2 == 0:
+        num += 1
+    is_prime = False
+    while not is_prime:
+        for i in range(3, num**.5):
+            if num % i == 0:
+                break
+    # Need to fix this loop to exit properly
+    return num
 
 
 def find_d(z):
