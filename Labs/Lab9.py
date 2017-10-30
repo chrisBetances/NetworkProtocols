@@ -215,7 +215,12 @@ def create_keys():
    
     :return: the keys as a three-tuple: (e,d,n)
     """
-   
+
+    key_dict = {'p': find_prime(), 'q': find_prime()}
+    key_dict['n'] = key_dict['p'] * key_dict['q']
+    key_dict['z'] = (key_dict['p'] - 1) * (key_dict['q'] - 1)
+    key_dict['d'] = find_d(key_dict['z'])
+
     pass  # Delete this line and complete this method
 
 
@@ -247,6 +252,20 @@ def break_key(pub):
     :return: a tuple containing the private key (d,n)
     """
     pass  # Delete this line and complete this method
+
+
+def find_prime():
+    prime = 0
+    return prime
+
+
+def find_d(z):
+    d = 0
+    for i in range(0, z):
+        j = (i * PUBLIC_EXPONENT) % z
+        if j == 1:
+            d = i
+    return d
 
 
 # Your code and additional functions go here. (Replace this line.)
