@@ -216,12 +216,12 @@ def create_keys():
     :return: the keys as a three-tuple: (e,d,n)
     """
 
-    key_dict = {'p': find_prime(), 'q': find_prime()}
-    key_dict['n'] = key_dict['p'] * key_dict['q']
-    key_dict['z'] = (key_dict['p'] - 1) * (key_dict['q'] - 1)
-    key_dict['d'] = find_d(key_dict['z'])
+    p = find_prime()
+    q = find_prime()
+    z = (p-1) * (q-1)
+    key = (PUBLIC_EXPONENT, find_d(z), p * q)
 
-    pass  # Delete this line and complete this method
+    return key
 
 
 def apply_key(key, m):
@@ -236,8 +236,8 @@ def apply_key(key, m):
              if given the public key and a message, encrypts the message
              and returns the ciphertext.
     """
-   
-    pass  # Delete this line and complete this method
+
+    return m**key[0] % key[1]
 
 
 def break_key(pub):
@@ -251,7 +251,15 @@ def break_key(pub):
     :param pub: a tuple containing the public key (e,n)
     :return: a tuple containing the private key (d,n)
     """
-    pass  # Delete this line and complete this method
+
+    n = pub[1]
+    p = 0
+    for i in range(2, n**.5):
+        if n % p == 0:
+            p = i
+    z = (p - 1) * ((n / p) - 1)
+    crack = (find_d(z), n)
+    return crack
 
 
 def find_prime():
