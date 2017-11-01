@@ -218,6 +218,10 @@ def create_keys():
 
     p = find_prime()
     q = find_prime()
+    # makes sure p != q
+    if p == q:
+        p = find_prime()
+        q = find_prime()
     z = (p-1) * (q-1)
     key = (PUBLIC_EXPONENT, find_d(z), p * q)
 
@@ -230,14 +234,14 @@ def apply_key(key, m):
    
     This can be used both for encryption and decription.
     
-    :param tuple key: (e,n) or (e,d)
+    :param tuple key: (e,n) or (d,n)
     :param int m: the message as a number 1 < m < n (roughly) 
     :return: the message with the key applied. For example,
              if given the public key and a message, encrypts the message
              and returns the ciphertext.
     """
 
-    return m**key[0] % key[1]
+    return (m**key[0]) % key[1]
 
 
 def break_key(pub):
@@ -254,35 +258,44 @@ def break_key(pub):
 
     n = pub[1]
     p = 0
-    for i in range(2, n**.5):
-        if n % p == 0:
+    for i in range(2, int(n**.5)):
+        if n % i == 0:
             p = i
     z = (p - 1) * ((n / p) - 1)
-    crack = (find_d(z), n)
+    crack = (find_d(int(z)), n)
     return crack
 
 
 def find_prime():
-    prime = check_prime(random.randint(MIN_PRIME, MAX_PRIME))
-    verified = False
-    while not verified:
-        if (prime - 1) % 17 != 0:
-            verified = True
-        else:
-            prime = check_prime(prime + 2)
+    """
+    determine if gcd(p-1, e) = 1
+    :return: int of a prime number that is also co-prime with 17
+    """
+
+    prime = random.randint(MIN_PRIME, MAX_PRIME)
+    # checks if number is even
+    if prime % 2 == 0:
+        prime = prime + 1
+    # checks if number is prime and gcd(p-1,e) =1
+    while (prime - 1) % PUBLIC_EXPONENT != 0 and not check_prime(prime):
+        prime = prime +2
+
     return prime
 
 
 def check_prime(num):
-    if num % 2 == 0:
-        num += 1
-    is_prime = False
-    while not is_prime:
-        for i in range(3, num**.5):
-            if num % i == 0:
-                break
-    # Need to fix this loop to exit properly
-    return num
+    """
+    checks for factors to num
+
+    :param num: int that is to be checked
+    :return: True if no factors found
+    """
+
+    i = 3
+    while i < num**.5 and num % i != 0:
+        i += 1
+
+    return i >= num**.5
 
 
 def find_d(z):
@@ -310,7 +323,7 @@ def get_public_key(key_pair):
     :return: (e,n)
     """
    
-    return (key_pair[0], key_pair[2])
+    return key_pair[0], key_pair[2]
 
 
 def get_private_key(key_pair):
@@ -322,7 +335,7 @@ def get_private_key(key_pair):
     :return: (d,n)
     """
    
-    return (key_pair[1], key_pair[2])
+    return key_pair[1], key_pair[2]
 
 
 main()
