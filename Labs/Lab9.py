@@ -278,7 +278,7 @@ def find_prime():
         prime = prime + 1
     # checks if number is prime and gcd(p-1,e) =1
     while (prime - 1) % PUBLIC_EXPONENT != 0 and not check_prime(prime):
-        prime = prime +2
+        prime = prime + 2
 
     return prime
 
