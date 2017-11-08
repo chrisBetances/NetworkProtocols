@@ -258,7 +258,7 @@ def break_key(pub):
 
     n = pub[1]
     p = 0
-    for i in range(2, int(n**.5)):
+    for i in range(2, int(n**.5) + 1):
         if n % i == 0:
             p = i
     z = (p - 1) * ((n / p) - 1)
@@ -278,7 +278,7 @@ def find_prime():
         prime = prime + 1
     # checks if number is prime and gcd(p-1,e) =1
     while (prime - 1) % PUBLIC_EXPONENT != 0 and not check_prime(prime):
-        prime = prime +2
+        prime = prime + 2
 
     return prime
 
@@ -292,10 +292,10 @@ def check_prime(num):
     """
 
     i = 3
-    while i < num**.5 and num % i != 0:
+    while i < int(num**.5) + 1 and num % i != 0:
         i += 1
 
-    return i >= num**.5
+    return i >= int(num**.5) + 1
 
 
 def find_d(z):
